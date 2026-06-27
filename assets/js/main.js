@@ -123,39 +123,58 @@
   });
 })();
 
-// ===== Lightbox =====
+// ===== Lightbox (with optional spec sidebar) =====
 (function () {
   const items = document.querySelectorAll('[data-lightbox]');
   if (!items.length) return;
   const lb = document.createElement('div');
   lb.className = 'lightbox';
-  lb.innerHTML = '<button class="lightbox-close" aria-label="Close">&times;</button><img alt="" />';
+  lb.innerHTML = '<button class="lightbox-close" aria-label="Close">&times;</button><div class="lightbox-content"><div class="lightbox-image-wrap"><img alt="" /></div><aside class="lightbox-sidebar"></aside></div>';
   document.body.appendChild(lb);
   const lbImg = lb.querySelector('img');
+  const sidebar = lb.querySelector('.lightbox-sidebar');
   const close = lb.querySelector('.lightbox-close');
-  const open = (src, alt) => {
-    lbImg.src = src;
-    lbImg.alt = alt || '';
+
+  const open = (el) => {
+    const img = el.querySelector('img');
+    if (!img) return;
+    lbImg.src = img.src;
+    lbImg.alt = img.alt || '';
+
+    // Build spec sidebar from data attrs if present
+    const d = el.dataset;
+    if (d.title || d.client || d.material || d.finish || d.qty || d.notes) {
+      const dl = [];
+      if (d.material) dl.push('<dt>Material</dt><dd>' + d.material + '</dd>');
+      if (d.finish)   dl.push('<dt>Finish</dt><dd>' + d.finish + '</dd>');
+      if (d.process)  dl.push('<dt>Process</dt><dd>' + d.process + '</dd>');
+      if (d.qty)      dl.push('<dt>Quantity</dt><dd>' + d.qty + '</dd>');
+      if (d.year)     dl.push('<dt>Year</dt><dd>' + d.year + '</dd>');
+      if (d.notes)    dl.push('<dt>Notes</dt><dd>' + d.notes + '</dd>');
+      sidebar.innerHTML =
+        (d.client ? '<span class="client">' + d.client + '</span>' : '') +
+        (d.title ? '<h4>' + d.title + '</h4>' : '') +
+        (dl.length ? '<dl>' + dl.join('') + '</dl>' : '');
+      sidebar.style.display = '';
+      lb.classList.add('has-sidebar');
+    } else {
+      sidebar.innerHTML = '';
+      sidebar.style.display = 'none';
+      lb.classList.remove('has-sidebar');
+    }
+
     lb.classList.add('open');
     document.body.style.overflow = 'hidden';
   };
+
   const shut = () => {
     lb.classList.remove('open');
     document.body.style.overflow = '';
   };
-  items.forEach((el) => {
-    el.addEventListener('click', () => {
-      const img = el.querySelector('img');
-      if (img) open(img.src, img.alt);
-    });
-  });
+  items.forEach((el) => el.addEventListener('click', () => open(el)));
   close.addEventListener('click', shut);
-  lb.addEventListener('click', (e) => {
-    if (e.target === lb) shut();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') shut();
-  });
+  lb.addEventListener('click', (e) => { if (e.target === lb) shut(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') shut(); });
 })();
 
 // ===== Contact form (Web3Forms) =====
